@@ -1,4 +1,4 @@
-name: Android debug build
+name: Android release build
 
 on:
   push:
@@ -25,13 +25,30 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: Build debug APK
-        run: ./gradlew --no-daemon :app:assembleDebug
+      - name: Restore release keystore
+        shell: bash
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          if [ -z "$RELEASE_KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "Add RELEASE_KEYSTORE_BASE64, KEYSTORE_PASSWORD, and KEY_PASSWORD repository secrets before building a release." >&2
+            exit 1
+          fi
+
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > secureotp-release-key.jks
+
+      - name: Build signed release APK and bundle
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew --no-daemon :app:assembleRelease :app:bundleRelease
 
       - name: Record package and signing fingerprint
         shell: bash
         run: |
-          apk="app/build/outputs/apk/debug/app-debug.apk"
+          apk="app/build/outputs/apk/release/app-release.apk"
           apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           certificate_info="$("$apksigner" verify --print-certs "$apk" 2>&1)"
           sha1="$(printf '%s\n' "$certificate_info" | awk -F'SHA-1 digest: ' '/SHA-1 digest:/ {print $2; exit}')"
@@ -42,23 +59,24 @@ jobs:
           fi
 
           {
-            echo "Application ID: com.otpextractor.secureotp.debug"
+            echo "Application ID: com.otpextractor.secureotp"
             echo "APK signing SHA-1: $sha1"
-            echo "Build type: debug"
+            echo "Build type: release"
           } | tee build-info.txt
 
           {
-            echo "### Android debug build"
-            echo "- OAuth package: com.otpextractor.secureotp.debug"
+            echo "### Android release build"
+            echo "- OAuth package: com.otpextractor.secureotp"
             echo "- APK signing SHA-1: $sha1"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload APK and build details
         uses: actions/upload-artifact@v7
         with:
-          name: secureotp-debug-${{ github.sha }}
+          name: secureotp-release-${{ github.sha }}
           path: |
-            app/build/outputs/apk/debug/app-debug.apk
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/bundle/release/app-release.aab
             build-info.txt
           if-no-files-found: error
           retention-days: 7

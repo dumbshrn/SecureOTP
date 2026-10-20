@@ -80,7 +80,17 @@ A smart Android utility app built with Kotlin that detects OTPs in app notificat
 3. Tap **Fetch OTPs** when you want SecureOTP to scan up to 20 inbox messages from the last day.
 4. A detected OTP is copied to the clipboard. Gmail content is processed on the device and not stored by the app.
 
-The GitHub Actions debug APK uses package name `com.otpextractor.secureotp.debug`; its signing SHA-1 is included in the `build-info.txt` artifact. Create an Android OAuth client with those exact values to use Gmail with that APK. GitHub-hosted debug signing keys can change between runs, so use the fingerprint from the exact APK you install. Release builds use package name `com.otpextractor.secureotp` and need a client configured with the release signing certificate fingerprint. Enable the Gmail API in the same Google Cloud project. During development, add your account as an OAuth test user. Public distribution with `gmail.readonly` requires Google's restricted-scope verification. Gmail sign-in also requires Google Play services on the device.
+The signed release OAuth Android client uses package `com.otpextractor.secureotp` and certificate SHA-1 `BE:F0:09:8C:16:D4:D1:A0:E1:1D:19:6B:FF:16:A9:DC:94:37:5F:B5`. Enable the Gmail API in the same Google Cloud project. During development, add your account as an OAuth test user. Public distribution with `gmail.readonly` requires Google's restricted-scope verification. Gmail sign-in also requires Google Play services on the device.
+
+### GitHub Actions release signing
+
+The Android release workflow creates a signed APK and AAB. Before running it, add these repository Actions secrets:
+
+- `RELEASE_KEYSTORE_BASE64`: Base64 encoding of the local `secureotp-release-key.jks` file.
+- `KEYSTORE_PASSWORD`: The keystore password stored in `secureotp-release-key.password.txt`.
+- `KEY_PASSWORD`: The key password; this key uses the same password as the keystore.
+
+Keep the keystore and password file backed up securely and never commit them. The workflow uploads the APK, AAB, and `build-info.txt` containing the OAuth package and release SHA-1.
 
 ### 3. Testing
 
