@@ -1,6 +1,8 @@
 package com.otpextractor.secureotp
 
 import android.Manifest
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -9,17 +11,44 @@ import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.IntentSenderRequest
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import com.google.android.gms.auth.api.identity.AuthorizationRequest
+import com.google.android.gms.auth.api.identity.Identity
+import com.google.android.gms.common.api.Scope
 import com.otpextractor.secureotp.databinding.ActivityMainBinding
 import com.otpextractor.secureotp.service.OtpListener
+import com.otpextractor.secureotp.utils.GmailOtpFetcher
 import com.otpextractor.secureotp.utils.PreferenceManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefManager: PreferenceManager
     private var wasListenerEnabledOnPause = false
+    private var fetchAfterAuthorization = false
+
+    private val gmailAuthorizationLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            try {
+                val authorizationResult = Identity.getAuthorizationClient(this)
+                    .getAuthorizationResultFromIntent(result.data)
+                onGmailAuthorized(authorizationResult.accessToken)
+            } catch (e: Exception) {
+                showGmailError(e)
+            }
+        } else {
+            fetchAfterAuthorization = false
+            Toast.makeText(this, "Gmail access was not granted", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -40,8 +69,12 @@ class MainActivity : AppCompatActivity() {
         wasListenerEnabledOnPause = isNotificationListenerEnabled()
 
         setupUI()
-        checkPermissions()
         updateUI()
+        if (intent?.action == ACTION_FETCH_GMAIL_OTP) {
+            handleFetchIntent(intent)
+        } else {
+            checkPermissions()
+        }
     }
 
     override fun onDestroy() {
@@ -68,7 +101,14 @@ class MainActivity : AppCompatActivity() {
         }
         
         updateUI()
+        updateGmailStatus()
         checkAndShowGmailWarning()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleFetchIntent(intent)
     }
     
     private fun showPermissionGrantedFeedback() {
@@ -108,6 +148,10 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnOptimizeGmail.setOnClickListener {
             openGmailOptimization()
+        }
+
+        binding.btnConnectGmail.setOnClickListener {
+            authorizeGmail(fetchLatest = false)
         }
 
         setupWarningBanner()
@@ -193,6 +237,91 @@ class MainActivity : AppCompatActivity() {
         }
 
         updateStatusText()
+        updateGmailStatus()
+    }
+
+    private fun updateGmailStatus() {
+        val accountEmail = prefManager.getGmailAccountEmail()
+        binding.tvGmailStatus.text = if (accountEmail == null) {
+            getString(R.string.gmail_not_connected)
+        } else {
+            getString(R.string.gmail_connected_as, accountEmail)
+        }
+    }
+
+    private fun handleFetchIntent(intent: Intent?) {
+        if (intent?.action == ACTION_FETCH_GMAIL_OTP) {
+            intent.action = null
+            authorizeGmail(fetchLatest = true)
+        }
+    }
+
+    private fun authorizeGmail(fetchLatest: Boolean) {
+        fetchAfterAuthorization = fetchLatest
+        val request = AuthorizationRequest.builder()
+            .setRequestedScopes(listOf(Scope(GMAIL_READONLY_SCOPE)))
+            .build()
+
+        Identity.getAuthorizationClient(this)
+            .authorize(request)
+            .addOnSuccessListener { authorizationResult ->
+                if (authorizationResult.hasResolution()) {
+                    val pendingIntent = authorizationResult.pendingIntent
+                    if (pendingIntent == null) {
+                        showGmailError(IllegalStateException("Google authorization could not be started"))
+                        return@addOnSuccessListener
+                    }
+                    gmailAuthorizationLauncher.launch(
+                        IntentSenderRequest.Builder(pendingIntent.intentSender).build()
+                    )
+                } else {
+                    onGmailAuthorized(authorizationResult.accessToken)
+                }
+            }
+            .addOnFailureListener { error ->
+                fetchAfterAuthorization = false
+                showGmailError(error)
+            }
+    }
+
+    private fun onGmailAuthorized(accessToken: String?) {
+        if (accessToken.isNullOrBlank()) {
+            fetchAfterAuthorization = false
+            Toast.makeText(this, "Google did not return Gmail access", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val shouldFetch = fetchAfterAuthorization
+        fetchAfterAuthorization = false
+        binding.btnConnectGmail.isEnabled = false
+
+        lifecycleScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    GmailOtpFetcher.fetch(accessToken, shouldFetch)
+                }
+                prefManager.setGmailAccountEmail(result.accountEmail)
+                updateGmailStatus()
+                if (!shouldFetch) {
+                    Toast.makeText(this@MainActivity, "Gmail connected", Toast.LENGTH_SHORT).show()
+                } else if (result.otp == null) {
+                    Toast.makeText(this@MainActivity, "No recent OTP found in Gmail", Toast.LENGTH_LONG).show()
+                } else {
+                    val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+                    clipboard.setPrimaryClip(ClipData.newPlainText("OTP", result.otp))
+                    Toast.makeText(this@MainActivity, "OTP copied from Gmail", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                showGmailError(e)
+            } finally {
+                binding.btnConnectGmail.isEnabled = true
+            }
+        }
+    }
+
+    private fun showGmailError(error: Throwable) {
+        val message = error.message?.takeIf { it.isNotBlank() } ?: "Unable to access Gmail"
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
 
     private fun updateStatusText() {
@@ -228,6 +357,11 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Toast.makeText(this, "Unable to open settings", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    companion object {
+        const val ACTION_FETCH_GMAIL_OTP = "com.otpextractor.secureotp.action.FETCH_GMAIL_OTP"
+        private const val GMAIL_READONLY_SCOPE = "https://www.googleapis.com/auth/gmail.readonly"
     }
 
 

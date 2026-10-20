@@ -1,6 +1,6 @@
 # SecureOTP - Universal OTP Extractor for Android
 
-A smart, battery-efficient Android utility app built with Kotlin that automatically detects, extracts, and copies OTP codes from **ANY app notifications** - SMS, Email, Banking apps, Social media, and more - to your clipboard instantly.
+A smart Android utility app built with Kotlin that detects OTPs in app notifications and can fetch recent OTP emails from Gmail on demand.
 
 ## ✨ Features
 
@@ -11,6 +11,7 @@ A smart, battery-efficient Android utility app built with Kotlin that automatica
 - **Social Media**: WhatsApp, Instagram, Facebook, Twitter, Telegram
 - **Payment Apps**: PayPal, Paytm, PhonePe, Google Pay, and more
 - **Any App**: Works with any app that sends OTP notifications!
+- **Gmail Fetch**: Connect Gmail and tap the Android Quick Settings tile to scan recent inbox messages
 
 ### 🎯 Smart Detection
 - Intelligently identifies OTP codes even when notifications contain multiple numbers
@@ -31,9 +32,9 @@ A smart, battery-efficient Android utility app built with Kotlin that automatica
 - Hardware accelerated for smooth performance
 
 ### 🔒 Privacy & Security
-- **100% Local Processing**: All OTP extraction happens on your device
-- **No Internet Required**: Works completely offline
-- **No Data Collection**: Zero data sent to servers
+- **On-device extraction**: Gmail message text is processed locally and is not saved by SecureOTP
+- **On-demand Gmail access**: Gmail is contacted only after you connect an account and tap Fetch OTPs
+- **No app backend**: SecureOTP does not send mail or OTP data to its own servers
 - **Open Source**: Fully transparent code you can audit
 - **No Permissions Abuse**: Only uses NotificationListenerService
 
@@ -46,7 +47,7 @@ A smart, battery-efficient Android utility app built with Kotlin that automatica
 ## Requirements
 
 - Android 8.0 (API 26) or higher
-- No internet connection needed
+- Internet access is used only for the optional Gmail fetch feature
 - No account setup required
 - Works with all apps that send notifications
 
@@ -71,6 +72,15 @@ A smart, battery-efficient Android utility app built with Kotlin that automatica
    - Extract the OTP code intelligently
    - Copy it to your clipboard
    - Show you a notification with the copied OTP
+
+### Fetch OTPs directly from Gmail
+
+1. In SecureOTP, tap **Connect Gmail** and grant the requested read-only Gmail access.
+2. Open Android Quick Settings, tap **Edit**, and add the **Fetch OTPs** tile.
+3. Tap **Fetch OTPs** when you want SecureOTP to scan up to 20 inbox messages from the last day.
+4. A detected OTP is copied to the clipboard. Gmail content is processed on the device and not stored by the app.
+
+The GitHub Actions debug APK uses package name `com.otpextractor.secureotp.debug`; its signing SHA-1 is included in the `build-info.txt` artifact. Create an Android OAuth client with those exact values to use Gmail with that APK. GitHub-hosted debug signing keys can change between runs, so use the fingerprint from the exact APK you install. Release builds use package name `com.otpextractor.secureotp` and need a client configured with the release signing certificate fingerprint. Enable the Gmail API in the same Google Cloud project. During development, add your account as an OAuth test user. Public distribution with `gmail.readonly` requires Google's restricted-scope verification. Gmail sign-in also requires Google Play services on the device.
 
 ### 3. Testing
 
@@ -109,10 +119,11 @@ The app recognizes various OTP formats including:
 - **Post Notifications**: To show you confirmation when OTP is copied
 - **Wake Lock**: For efficient background processing (minimal usage)
 
-### Privacy Guarantee:
+### Privacy:
 - ✅ All processing happens locally on your device
-- ✅ No network access or internet permission
-- ✅ No data collection or analytics
+- ✅ Gmail access is optional and user-triggered
+- ✅ No email content or access token is saved by SecureOTP
+- ✅ No app backend, data collection, or analytics
 - ✅ No ads or trackers
 - ✅ Open source - you can verify yourself!
 

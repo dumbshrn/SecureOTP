@@ -15,4 +15,7 @@
     <string name="battery_optimization_title">🔋 Battery Optimization</string>
     <string name="battery_optimization_desc">Efficient background processing - minimal battery usage</string>
     <string name="supported_apps">Supports: SMS, Email, Banking, Social Media &amp; more</string>
+    <string name="fetch_gmail_otps">Fetch OTPs</string>
+    <string name="gmail_not_connected">Gmail is not connected. Connect Gmail, then add the Fetch OTPs tile in Android Quick Settings.</string>
+    <string name="gmail_connected_as">Connected to %1$s. Add the Fetch OTPs tile in Android Quick Settings to scan recent mail.</string>
 </resources>

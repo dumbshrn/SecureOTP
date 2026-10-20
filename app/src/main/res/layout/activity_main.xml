@@ -153,6 +153,54 @@
     </com.google.android.material.card.MaterialCardView>
 
     <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardGmailAccess"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cardService">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Fetch OTPs from Gmail"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvGmailStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/gmail_not_connected"
+                android:textColor="?android:textColorSecondary"
+                android:textSize="12sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnConnectGmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Connect Gmail"
+                android:textAllCaps="false"
+                style="@style/Widget.Material3.Button.TonalButton"
+                app:icon="@drawable/ic_email"
+                app:iconGravity="start" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardInfo"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -162,7 +210,7 @@
         app:cardBackgroundColor="#E3F2FD"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cardService">
+        app:layout_constraintTop_toBottomOf="@id/cardGmailAccess">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -190,7 +238,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="• Works offline - no internet needed\n• Instant OTP detection from notifications\n• Battery efficient background processing\n• Smart detection - filters out phone numbers\n• Auto-copy to clipboard ready to paste"
+                android:text="• Notifications processed on your device\n• Optional Gmail fetch runs only when you tap the tile\n• Smart detection filters out phone numbers\n• OTPs are copied to the clipboard"
                 android:textSize="12sp"
                 android:textColor="@color/text_primary"
                 android:layout_marginTop="8dp"
@@ -290,7 +338,7 @@
         android:id="@+id/tvPrivacy"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="🔒 Privacy: All processing happens on your device. No data is sent anywhere."
+        android:text="🔒 Privacy: Gmail access is optional. Email is processed on your device and never sent to SecureOTP servers."
         android:textSize="11sp"
         android:textColor="@color/text_secondary"
         android:textAlignment="center"

@@ -13,7 +13,7 @@
 
 ## ✅ Prerequisites Checklist
 
-SecureOTP is **ready for F-Droid!** Here's what we've verified:
+The original offline-only build was prepared for F-Droid. The optional Gmail fetch feature adds Google Play services authentication and Gmail API access; update the F-Droid build recipe and review its dependency and policy requirements before submitting this version.
 
 - [x] **100% Open Source** - All code on GitHub
 - [x] **No Proprietary Dependencies** - Only FOSS libraries:
@@ -23,7 +23,7 @@ SecureOTP is **ready for F-Droid!** Here's what we've verified:
   - androidx.constraintlayout:constraintlayout
   - kotlinx-coroutines-android
 - [x] **No Tracking/Analytics** - Zero telemetry
-- [x] **No Internet Permission** - Works completely offline
+- [ ] **Network access** - Required for optional Gmail fetch
 - [x] **Clean Build Process** - Standard Gradle build
 - [x] **Metadata Created** - `fastlane/metadata/` folder ready
 - [ ] **Git Tag for v1.0.1** - Need to create
@@ -52,7 +52,7 @@ git tag -a v1.0.1 -m "Release v1.0.1
 
 First F-Droid submission
 - Universal OTP extraction from any app notification
-- 100% local processing, no internet required
+- Notification OTP extraction is local; optional Gmail fetch connects to Google's Gmail API
 - Battery optimized with smart wake locks
 - Open source and privacy-focused"
 
@@ -153,9 +153,9 @@ git commit -m "New app: SecureOTP
 Universal OTP extractor that automatically detects and copies OTP codes from any app notification.
 
 - 100% open source
-- No internet permission
+- Network access for the optional Gmail fetch feature
 - No tracking or analytics
-- Works completely offline
+- Notification extraction works offline; Gmail fetching requires internet and Google Play services
 - Battery optimized"
 
 git push origin add-secureotp

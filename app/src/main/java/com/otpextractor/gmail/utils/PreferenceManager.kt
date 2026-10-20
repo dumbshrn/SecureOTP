@@ -32,6 +32,14 @@ class PreferenceManager(context: Context) {
         return prefs.getBoolean(KEY_GMAIL_WARNING_DISMISSED, false)
     }
 
+    fun setGmailAccountEmail(email: String?) {
+        prefs.edit().putString(KEY_GMAIL_ACCOUNT_EMAIL, email).apply()
+    }
+
+    fun getGmailAccountEmail(): String? {
+        return prefs.getString(KEY_GMAIL_ACCOUNT_EMAIL, null)
+    }
+
     fun clear() {
         prefs.edit().clear().apply()
     }
@@ -41,5 +49,6 @@ class PreferenceManager(context: Context) {
         private const val KEY_SERVICE_ENABLED = "service_enabled"
         private const val KEY_OTP_COUNT = "otp_count"
         private const val KEY_GMAIL_WARNING_DISMISSED = "gmail_warning_dismissed"
+        private const val KEY_GMAIL_ACCOUNT_EMAIL = "gmail_account_email"
     }
 }

@@ -1,0 +1,63 @@
+name: Android debug build
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Build debug APK
+        run: ./gradlew --no-daemon :app:assembleDebug
+
+      - name: Record package and signing fingerprint
+        shell: bash
+        run: |
+          apk="app/build/outputs/apk/debug/app-debug.apk"
+          apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          sha1="$("$apksigner" verify --print-certs "$apk" | awk -F'SHA-1 digest: ' '/Signer #1 certificate SHA-1 digest:/ {print $2; exit}')"
+
+          if [ -z "$sha1" ]; then
+            echo "Could not read the APK signing certificate fingerprint." >&2
+            exit 1
+          fi
+
+          {
+            echo "Application ID: com.otpextractor.secureotp.debug"
+            echo "APK signing SHA-1: $sha1"
+            echo "Build type: debug"
+          } | tee build-info.txt
+
+          {
+            echo "### Android debug build"
+            echo "- OAuth package: `com.otpextractor.secureotp.debug`"
+            echo "- APK signing SHA-1: `$sha1`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APK and build details
+        uses: actions/upload-artifact@v7
+        with:
+          name: secureotp-debug-${{ github.sha }}
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            build-info.txt
+          if-no-files-found: error
+          retention-days: 7
