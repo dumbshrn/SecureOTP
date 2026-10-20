@@ -33,7 +33,8 @@ jobs:
         run: |
           apk="app/build/outputs/apk/debug/app-debug.apk"
           apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          sha1="$("$apksigner" verify --print-certs "$apk" | awk -F'SHA-1 digest: ' '/Signer #1 certificate SHA-1 digest:/ {print $2; exit}')"
+          certificate_info="$("$apksigner" verify --print-certs "$apk" 2>&1)"
+          sha1="$(printf '%s\n' "$certificate_info" | awk -F'SHA-1 digest: ' '/SHA-1 digest:/ {print $2; exit}')"
 
           if [ -z "$sha1" ]; then
             echo "Could not read the APK signing certificate fingerprint." >&2
